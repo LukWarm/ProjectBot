@@ -1,0 +1,8 @@
+{
+“name”: “ProjectBot”,
+“version”: “0.0.1”,
+“description”: “Clickup Integration for CR Discord”,
+“main”: “bot.js”,
+“author”: “Egan Donley”,
+“dependencies”: {}
+}
