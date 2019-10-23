@@ -1,39 +1,45 @@
-var Discord = require('discord.io');
-var logger = require('winston');
-var auth = require('./auth.json');
-// Configure logger settings
-logger.remove(logger.transports.Console);
-logger.add(new logger.transports.Console, {
-    colorize: true
-});
-logger.level = 'debug';
-// Initialize Discord Bot
-var bot = new Discord.Client({
-   token: auth.token,
-   autorun: true
-});
-bot.on('ready', function (evt) {
-    logger.info('Connected');
-    logger.info('Logged in as: ');
-    logger.info(bot.username + ' - (' + bot.id + ')');
-});
-bot.on('message', function (user, userID, channelID, message, evt) {
-    // Our bot needs to know if it will execute a command
-    // It will listen for messages that will start with `!`
-    if (message.substring(0, 1) == '!') {
-        var args = message.substring(1).split(' ');
-        var cmd = args[0];
+const Discord = require('discord.js');
+const auth = require('./auth.json');
+const token = auth.token;
+const bot = new Discord.Client();
+const sbodID = '636425993208332288';
+const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+const xhr = new XMLHttpRequest();
+const api = 'https://api.clickup.com/api/v2/'
+const access_token = '';
+const prefix = '!';
 
-        args = args.splice(1);
-        switch(cmd) {
-            // !ping
-            case 'ping':
-                bot.sendMessage({
-                    to: channelID,
-                    message: 'Pong!'
-                });
-            break;
-            // Just add any case commands if you want to..
-         }
-     }
-});
+bot.on('ready', () => {
+  console.log('Bot is Online!');
+})
+
+bot.on('message', message => {
+  let args = message.content.substring(prefix.length).split(" ");
+  switch (args[0]) {
+    case ('auth'):
+      if (message.member.roles.has(sbodID)) {
+        message.channel.send('Auth URL https://app.clickup.com/api?client_id=Q9JXVN7585QPRWZLSU25PBN2NZSPIZBV&redirect_uri=https://discord.gg/');
+      } else {
+        message.channel.send('You do not have the proper role for this command!');
+      }
+      break;
+    case ('ping'):
+      message.channel.send('Pong!');
+      break;
+    case ('team'):
+      xhr.open('POST', `${api}team`)
+      xhr.setRequestHeader('Authorization', access_token);
+      xhr.onreadystatechange = function () {
+        if (this.readyState === 4) {
+          console.log('Status:', this.status);
+          console.log('Headers:', this.getAllResponseHeaders());
+          console.log('Body:', this.responseText);
+          message.channel.send(this.responseText.name);
+        }
+      };
+      xhr.send();
+    break;
+  }
+})
+
+bot.login(token);
