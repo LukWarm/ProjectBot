@@ -1,12 +1,11 @@
 const Discord = require('discord.js');
-const auth = require('./auth.json');
-const token = auth.token;
+const discordToken = require('./auth.json').discordToken;
 const bot = new Discord.Client();
 const sbodID = '636425993208332288';
-const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-const xhr = new XMLHttpRequest();
+const request = require('request');
 const api = 'https://api.clickup.com/api/v2/'
-const access_token = '';
+const team_id = '2242564';
+const clickToken = require('./auth.json').clickToken;
 const prefix = '!';
 
 bot.on('ready', () => {
@@ -16,30 +15,70 @@ bot.on('ready', () => {
 bot.on('message', message => {
   let args = message.content.substring(prefix.length).split(" ");
   switch (args[0]) {
-    case ('auth'):
-      if (message.member.roles.has(sbodID)) {
-        message.channel.send('Auth URL https://app.clickup.com/api?client_id=Q9JXVN7585QPRWZLSU25PBN2NZSPIZBV&redirect_uri=https://discord.gg/');
-      } else {
-        message.channel.send('You do not have the proper role for this command!');
-      }
-      break;
     case ('ping'):
       message.channel.send('Pong!');
       break;
-    case ('team'):
-      xhr.open('POST', `${api}team`)
-      xhr.setRequestHeader('Authorization', access_token);
-      xhr.onreadystatechange = function () {
-        if (this.readyState === 4) {
-          console.log('Status:', this.status);
-          console.log('Headers:', this.getAllResponseHeaders());
-          console.log('Body:', this.responseText);
-          message.channel.send(this.responseText.name);
-        }
-      };
-      xhr.send();
-    break;
+    case ('spaces'):
+      if (!args[1]) {
+        request({
+          method: 'GET',
+          url: `${api}team/${team_id}/space?archived=false`,
+          headers: {
+            'Authorization': clickToken
+          }}, function (error, response, body) {
+            body = JSON.parse(body);
+            console.log('Status:', response.statusCode);
+            console.log('Response:', body);
+            if (!body.spaces[0]) {
+              message.channel.send('There are currently no active spaces.');
+            } else {
+              let msg = '';
+              for ( i in body.spaces ) {
+                i === 0 ? msg = `> ${body.spaces[i].name}\n` : msg = msg + `> ${body.spaces[i].name}\n`;
+                console.log(msg);
+              }
+              message.channel.send(`Active Spaces: \n${msg}`);
+            }
+          });
+      } else if (args[1] === 'archived') {
+        request({
+          method: 'GET',
+          url: `${api}team/${team_id}/space?archived=true`,
+          headers: {
+            'Authorization': clickToken
+          }}, function (error, response, body) {
+            body = JSON.parse(body);
+            console.log('Status:', response.statusCode);
+            console.log('Response:', body);
+            if (!body.spaces[0]) {
+              message.channel.send('There are currently no archived spaces.');
+            } else {
+              let msg = '';
+              for ( i in body.spaces ) {
+                i === 0 ? msg = `> ${body.spaces[i].name}\n` : msg = msg + `> ${body.spaces[i].name}\n`;
+                console.log(msg);
+              }
+              message.channel.send(`Archived Spaces: \n${msg}`);
+            }
+          });
+      } else {
+        message.channel.send('Incorrect arguments! Must be blank or archived.');
+      }
+      break;
+    case ('teams'):
+      request({
+        method: 'GET',
+        url: `${api}team`,
+        headers: {
+          'Authorization': clickToken
+        }}, function (error, response, body) {
+          body = JSON.parse(body);
+          console.log('Status:', response.statusCode);
+          console.log('Response: ', body);
+          message.channel.send(`You are in the ${body.teams[0].name} team!`);
+        });
+      break;
   }
 })
 
-bot.login(token);
+bot.login(discordToken);
